@@ -1,0 +1,207 @@
+{
+  "users": [
+    {
+      "id": "usr-1",
+      "username": "alex",
+      "name": "Alex Vance",
+      "email": "alex@synhub.com",
+      "password": "password123",
+      "role": "manager",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "title": "Product Manager"
+    },
+    {
+      "id": "usr-2",
+      "username": "sarah",
+      "name": "Sarah Jenkins",
+      "email": "sarah@synhub.com",
+      "password": "password123",
+      "role": "employee",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+      "title": "Senior Frontend Engineer"
+    },
+    {
+      "id": "usr-3",
+      "username": "mike",
+      "name": "Mike Chen",
+      "email": "mike@synhub.com",
+      "password": "password123",
+      "role": "employee",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "title": "UI/UX Designer"
+    },
+    {
+      "id": "usr-4",
+      "username": "emma",
+      "name": "Emma Watson",
+      "email": "emma@synhub.com",
+      "password": "password123",
+      "role": "employee",
+      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80",
+      "title": "Backend Engineer"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-1",
+      "name": "Website Redesign",
+      "description": "Overhauling core landing pages, components, and dashboard UI for 2.0 release.",
+      "color": "#059669",
+      "createdAt": "2026-08-04"
+    },
+    {
+      "id": "proj-2",
+      "name": "Mobile App v2.0",
+      "description": "Rebuilding native iOS and Android application with offline sync.",
+      "color": "#10b981",
+      "createdAt": "2026-08-07"
+    },
+    {
+      "id": "proj-3",
+      "name": "Internal Dev Tooling",
+      "description": "Improving CI/CD pipeline speed, automated testing, and dev productivity.",
+      "color": "#d97706",
+      "createdAt": "2026-08-09"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "tsk-101",
+      "title": "Fix authentication login bug",
+      "description": "Users reporting intermittent 401 token expiration errors during login retry.",
+      "projectId": "proj-1",
+      "assigneeId": "usr-2",
+      "assigneeName": "Sarah Jenkins",
+      "priority": "High",
+      "status": "In Progress",
+      "dueDate": "2026-08-14",
+      "tags": [
+        "Bug",
+        "Auth",
+        "Frontend"
+      ],
+      "inMyDay": true,
+      "isImportant": true,
+      "isPersonal": false,
+      "recurring": "none",
+      "hasError": true,
+      "errorDetails": "Cookie domain mismatch causing token drop in Safari browser.",
+      "errorSeverity": "Critical",
+      "createdAt": "2026-08-12",
+      "subtasks": [
+        {
+          "id": "sub-1",
+          "title": "Reproduce token refresh issue in dev env",
+          "completed": true
+        },
+        {
+          "id": "sub-2",
+          "title": "Update Axios interceptor refresh token loop",
+          "completed": false
+        },
+        {
+          "id": "sub-3",
+          "title": "Add regression test suite",
+          "completed": false
+        }
+      ],
+      "comments": []
+    },
+    {
+      "id": "tsk-102",
+      "title": "Design hero section banner",
+      "description": "Create high-resolution responsive hero illustrations and typography mockups in Figma.",
+      "projectId": "proj-1",
+      "assigneeId": "usr-3",
+      "assigneeName": "Mike Chen",
+      "priority": "High",
+      "status": "Done",
+      "dueDate": "2026-08-13",
+      "tags": [
+        "Design",
+        "UI/UX"
+      ],
+      "inMyDay": false,
+      "isImportant": true,
+      "isPersonal": false,
+      "recurring": "none",
+      "hasError": false,
+      "errorDetails": "",
+      "errorSeverity": "Low",
+      "createdAt": "2026-08-10",
+      "subtasks": [],
+      "comments": []
+    },
+    {
+      "id": "tsk-103",
+      "title": "Optimize SQL database index performance",
+      "description": "Slow queries on task search endpoint when filtering by project tags.",
+      "projectId": "proj-3",
+      "assigneeId": "usr-4",
+      "assigneeName": "Emma Watson",
+      "priority": "Medium",
+      "status": "To Do",
+      "dueDate": "2026-08-15",
+      "tags": [
+        "Database",
+        "Performance"
+      ],
+      "inMyDay": false,
+      "isImportant": false,
+      "isPersonal": false,
+      "recurring": "none",
+      "hasError": false,
+      "errorDetails": "",
+      "errorSeverity": "Low",
+      "createdAt": "2026-08-13",
+      "subtasks": [],
+      "comments": []
+    }
+  ],
+  "personalGoals": [
+    {
+      "id": "goal-1",
+      "userId": "usr-2",
+      "title": "Read 20 pages of technical architecture book",
+      "category": "Learning",
+      "completed": true,
+      "dueDate": "2026-08-14",
+      "createdAt": "2026-08-14"
+    }
+  ],
+  "chatMessages": [
+    {
+      "id": "msg-1",
+      "projectId": "proj-1",
+      "userId": "usr-1",
+      "userName": "Alex Vance",
+      "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "text": "Hey team, let us make sure the website redesign hero section is ready by Friday.",
+      "isSystemMessage": false,
+      "timestamp": "09:30 AM"
+    },
+    {
+      "id": "msg-2",
+      "projectId": "proj-1",
+      "userId": "usr-2",
+      "userName": "Sarah Jenkins",
+      "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+      "text": "Working on the Safari auth cookie bug fix right now.",
+      "isSystemMessage": false,
+      "timestamp": "09:42 AM"
+    },
+    {
+      "id": "msg-3",
+      "projectId": "proj-1",
+      "userId": "system",
+      "userName": "System",
+      "userAvatar": "",
+      "text": "Sarah Jenkins marked \"Fix authentication login bug\" as In Progress",
+      "isSystemMessage": true,
+      "timestamp": "09:45 AM"
+    }
+  ],
+  "settings": {
+    "geminiApiKey": ""
+  }
+}
