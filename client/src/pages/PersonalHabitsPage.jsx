@@ -63,6 +63,7 @@ export default function PersonalHabitsPage() {
     if (!newTitle.trim()) return;
 
     try {
+      const willBeImportant = isImportantNew || activeTab === 'important';
       const created = await fetchApi('/personal', {
         method: 'POST',
         headers: { 'x-user-id': user?.id || '' },
@@ -70,10 +71,14 @@ export default function PersonalHabitsPage() {
           title: newTitle.trim(), 
           category: newCategory, 
           userId: user?.id,
-          isImportant: isImportantNew
+          isImportant: willBeImportant
         }
       });
-      setGoals(prev => [created, ...prev]);
+      const newGoalObj = {
+        ...created,
+        isImportant: created.isImportant ?? willBeImportant
+      };
+      setGoals(prev => [newGoalObj, ...prev]);
       setNewTitle('');
       setIsImportantNew(false);
     } catch (err) {
@@ -94,8 +99,20 @@ export default function PersonalHabitsPage() {
     }
   };
 
-  const handleToggleImportantGoal = (goalId) => {
-    setGoals(prev => prev.map(g => (g.id === goalId ? { ...g, isImportant: !g.isImportant } : g)));
+  const handleToggleImportantGoal = async (goalId) => {
+    const currentGoal = goals.find(g => g.id === goalId);
+    const newImportantState = !currentGoal?.isImportant;
+    setGoals(prev => prev.map(g => (g.id === goalId ? { ...g, isImportant: newImportantState } : g)));
+    try {
+      const updated = await fetchApi(`/personal/${goalId}/important`, {
+        method: 'PATCH',
+        headers: { 'x-user-id': user?.id || '' },
+        body: { isImportant: newImportantState }
+      });
+      setGoals(prev => prev.map(g => (g.id === goalId ? updated : g)));
+    } catch (err) {
+      loadPersonalGoals();
+    }
   };
 
   const handleDeleteGoal = async (goalId) => {
@@ -126,10 +143,10 @@ export default function PersonalHabitsPage() {
     }
   };
 
-  const myDayGoals = goals.filter(g => g.dueDate === todayStr || !g.dueDate);
+  const myDayGoals = goals;
   const importantGoals = goals.filter(g => g.isImportant);
   const plannedGoals = goals.filter(g => g.dueDate);
-  const habitGoals = goals.filter(g => g.category === 'Learning' || g.category === 'Health & Wellness');
+  const habitGoals = goals.filter(g => ['Learning', 'Health & Wellness', 'Skill Development', 'Personal Goal', 'General'].includes(g.category));
 
   const displayedGoals = activeTab === 'myday' ? myDayGoals
     : activeTab === 'important' ? importantGoals

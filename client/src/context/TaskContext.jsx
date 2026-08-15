@@ -49,21 +49,28 @@ export function TaskProvider({ children }) {
       return;
     }
     try {
-      const messages = await fetchApi(`/chat/${projectId}`);
+      const headers = user ? { 'x-user-id': user.id, 'x-user-role': user.role } : {};
+      const messages = await fetchApi(`/chat/${projectId}`, { headers });
       setChatMessages(messages);
     } catch (err) {
       console.error('Error fetching chat messages:', err);
     }
-  }, []);
+  }, [user]);
 
-  const sendChatMessage = async (projectId, text) => {
-    if (!projectId || !text.trim()) return;
+  const sendChatMessage = async (projectId, text = '', replyTo = null, attachment = null) => {
+    if (!projectId || (!text.trim() && !attachment)) return;
     try {
-      const headers = user ? { 'x-user-id': user.id } : {};
+      const headers = user ? { 'x-user-id': user.id, 'x-user-role': user.role } : {};
       const newMessage = await fetchApi(`/chat/${projectId}`, {
         method: 'POST',
         headers,
-        body: { text: text.trim(), userId: user?.id }
+        body: { 
+          text: text.trim(), 
+          userId: user?.id,
+          userRole: user?.role,
+          replyTo,
+          attachment
+        }
       });
       setChatMessages((prev) => [...prev, newMessage]);
       return newMessage;

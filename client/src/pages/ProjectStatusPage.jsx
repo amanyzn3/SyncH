@@ -17,7 +17,7 @@ import {
 
 export default function ProjectStatusPage({ onSelectTask }) {
   const { projects, tasks } = useTasks();
-  const { allUsers } = useAuth();
+  const { user, allUsers } = useAuth();
   
   const [expandedProjects, setExpandedProjects] = useState({});
 
@@ -30,7 +30,10 @@ export default function ProjectStatusPage({ onSelectTask }) {
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const allTeamTasks = tasks.filter(t => !t.isPersonal);
+  const isManager = user?.role === 'manager';
+  const assignedProjectIds = projects.map(p => p.id);
+
+  const allTeamTasks = tasks.filter(t => !t.isPersonal && (isManager || assignedProjectIds.includes(t.projectId)));
   const totalTasks = allTeamTasks.length;
   const totalCompleted = allTeamTasks.filter(t => t.status === 'Done').length;
   const totalOverdue = allTeamTasks.filter(t => t.dueDate < todayStr && t.status !== 'Done').length;

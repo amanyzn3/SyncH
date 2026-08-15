@@ -12,7 +12,10 @@ import {
   Calendar, 
   HelpCircle,
   BarChart2,
-  ListTodo
+  ListTodo,
+  Paperclip,
+  FileText,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export default function AIChatDrawer({ isOpen, onClose }) {
@@ -23,12 +26,14 @@ export default function AIChatDrawer({ isOpen, onClose }) {
     {
       id: 'msg-init',
       sender: 'ai',
-      text: `Hello ${user?.name || 'user'}. I am your TaskFlow AI Assistant.\n\nYou can query task statuses, request next task recommendations, or issue commands in natural text.`
+      text: `Hello ${user?.name || 'user'}. I am your TaskFlow AI Assistant.\n\nYou can query task statuses, request next task recommendations, or attach photos/documents for me to analyze and solve!`
     }
   ]);
   const [input, setInput] = useState('');
+  const [attachment, setAttachment] = useState(null);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const isManager = user?.role === 'manager';
 
@@ -50,18 +55,45 @@ export default function AIChatDrawer({ isOpen, onClose }) {
     }
   }, [messages, isOpen]);
 
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const fullDataUrl = event.target.result;
+      const base64Data = fullDataUrl.split(',')[1] || '';
+      
+      setAttachment({
+        name: file.name,
+        type: file.type,
+        size: Math.round(file.size / 1024) + ' KB',
+        url: fullDataUrl,
+        mimeType: file.type || 'image/png',
+        base64Data,
+        isImage: file.type.startsWith('image/')
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   const handleSendMessage = async (textToSend) => {
-    const queryText = textToSend || input.trim();
-    if (!queryText || loading) return;
+    const queryText = (textToSend || input).trim();
+    if ((!queryText && !attachment) || loading) return;
+
+    const currentAttachment = attachment;
 
     const userMsg = {
       id: `msg-${Date.now()}`,
       sender: 'user',
-      text: queryText
+      text: queryText,
+      attachment: currentAttachment
     };
 
     setMessages(prev => [...prev, userMsg]);
     if (!textToSend) setInput('');
+    setAttachment(null);
     setLoading(true);
 
     try {
@@ -70,7 +102,12 @@ export default function AIChatDrawer({ isOpen, onClose }) {
         body: {
           message: queryText,
           userId: user?.id,
-          role: user?.role
+          role: user?.role,
+          attachment: currentAttachment ? {
+            name: currentAttachment.name,
+            mimeType: currentAttachment.mimeType,
+            base64Data: currentAttachment.base64Data
+          } : null
         }
       });
 
@@ -107,7 +144,7 @@ export default function AIChatDrawer({ isOpen, onClose }) {
       right: 0,
       top: 0,
       bottom: 0,
-      width: '400px',
+      width: '420px',
       maxWidth: '100vw',
       backgroundColor: 'var(--bg-surface)',
       borderLeft: '1px solid var(--border-color)',
@@ -117,6 +154,7 @@ export default function AIChatDrawer({ isOpen, onClose }) {
       flexDirection: 'column',
       animation: 'slideLeft 0.25s ease-out forwards'
     }}>
+      {/* Header */}
       <div style={{
         padding: '1rem 1.25rem',
         borderBottom: '1px solid var(--border-color)',
@@ -141,7 +179,7 @@ export default function AIChatDrawer({ isOpen, onClose }) {
           <div>
             <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: '700' }}>TaskFlow AI Assistant</h3>
             <span style={{ fontSize: '0.72rem', color: 'var(--accent-green)', fontWeight: '600' }}>
-              • Active Database Sync
+              • Gemini Multimodal Active
             </span>
           </div>
         </div>
@@ -151,6 +189,7 @@ export default function AIChatDrawer({ isOpen, onClose }) {
         </button>
       </div>
 
+      {/* Suggestion Pills */}
       <div style={{
         padding: '0.6rem 1rem',
         borderBottom: '1px solid var(--border-color)',
@@ -180,6 +219,7 @@ export default function AIChatDrawer({ isOpen, onClose }) {
         ))}
       </div>
 
+      {/* Messages Stream */}
       <div style={{
         flex: 1,
         padding: '1rem',
@@ -224,6 +264,37 @@ export default function AIChatDrawer({ isOpen, onClose }) {
               whiteSpace: 'pre-wrap'
             }}>
               {m.text}
+
+              {/* User Attachment Render */}
+              {m.attachment && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  {m.attachment.isImage ? (
+                    <img
+                      src={m.attachment.url}
+                      alt={m.attachment.name}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '180px',
+                        borderRadius: 'var(--radius-sm)',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      fontSize: '0.78rem',
+                      padding: '0.35rem 0.65rem',
+                      backgroundColor: 'rgba(255,255,255,0.2)',
+                      borderRadius: 'var(--radius-sm)'
+                    }}>
+                      <FileText size={15} />
+                      <span>{m.attachment.name} ({m.attachment.size})</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -243,33 +314,88 @@ export default function AIChatDrawer({ isOpen, onClose }) {
               <Bot size={15} />
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-              Processing database query...
+              Analyzing data and resolving query...
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Attachment Preview Banner */}
+      {attachment && (
+        <div style={{
+          padding: '0.5rem 1rem',
+          backgroundColor: 'var(--bg-surface-hover)',
+          borderTop: '1px solid var(--border-color)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: '0.78rem',
+          color: 'var(--accent-green)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {attachment.isImage ? <ImageIcon size={15} /> : <FileText size={15} />}
+            <span>Attached for AI analysis: <strong>{attachment.name}</strong> ({attachment.size})</span>
+          </div>
+          <button onClick={() => setAttachment(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Form Input Bar */}
       <form
         onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
         style={{
           padding: '0.85rem 1rem',
           borderTop: '1px solid var(--border-color)',
           display: 'flex',
-          gap: '0.5rem'
+          alignItems: 'center',
+          gap: '0.4rem',
+          backgroundColor: 'var(--bg-surface)'
         }}
       >
         <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          accept="image/*,.pdf,.txt,.doc,.docx"
+          style={{ display: 'none' }}
+        />
+
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          style={{
+            padding: '0.4rem',
+            color: attachment ? 'var(--accent-green)' : 'var(--text-muted)',
+            backgroundColor: 'var(--bg-surface-hover)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-md)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '40px',
+            width: '40px'
+          }}
+          title="Attach photo or document for AI to solve"
+        >
+          <Paperclip size={18} />
+        </button>
+
+        <input
           type="text"
-          placeholder="Type question or task command..."
+          placeholder="Ask AI or solve attached file/photo..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           style={{ flex: 1, height: '40px' }}
         />
+
         <button
           type="submit"
           className="btn-primary"
-          disabled={!input.trim() || loading}
+          disabled={(!input.trim() && !attachment) || loading}
           style={{ height: '40px', padding: '0 0.85rem' }}
         >
           <Send size={16} />

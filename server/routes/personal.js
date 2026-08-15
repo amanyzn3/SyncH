@@ -20,7 +20,7 @@ router.get('/', (req, res) => {
 
 // CREATE new personal goal
 router.post('/', (req, res) => {
-  const { title, category = 'General', dueDate = getTodayString(0) } = req.body;
+  const { title, category = 'General', dueDate = getTodayString(0), isImportant = false } = req.body;
   const userId = req.headers['x-user-id'] || req.body.userId;
 
   if (!title) return res.status(400).json({ error: 'Goal title is required' });
@@ -34,6 +34,7 @@ router.post('/', (req, res) => {
     title,
     category,
     completed: false,
+    isImportant: Boolean(isImportant),
     dueDate,
     createdAt: getTodayString(0)
   };
@@ -53,6 +54,20 @@ router.patch('/:id/toggle', (req, res) => {
   if (!goal) return res.status(404).json({ error: 'Personal goal not found' });
 
   goal.completed = !goal.completed;
+  saveData(db);
+
+  res.json(goal);
+});
+
+// TOGGLE personal goal importance
+router.patch('/:id/important', (req, res) => {
+  const db = loadData();
+  if (!db.personalGoals) db.personalGoals = [];
+
+  const goal = db.personalGoals.find(g => g.id === req.params.id);
+  if (!goal) return res.status(404).json({ error: 'Personal goal not found' });
+
+  goal.isImportant = req.body.isImportant !== undefined ? Boolean(req.body.isImportant) : !goal.isImportant;
   saveData(db);
 
   res.json(goal);

@@ -47,6 +47,11 @@
       "name": "Website Redesign",
       "description": "Overhauling core landing pages, components, and dashboard UI for 2.0 release.",
       "color": "#059669",
+      "members": [
+        "usr-1",
+        "usr-2",
+        "usr-3"
+      ],
       "createdAt": "2026-08-04"
     },
     {
@@ -54,6 +59,11 @@
       "name": "Mobile App v2.0",
       "description": "Rebuilding native iOS and Android application with offline sync.",
       "color": "#10b981",
+      "members": [
+        "usr-1",
+        "usr-2",
+        "usr-4"
+      ],
       "createdAt": "2026-08-07"
     },
     {
@@ -61,10 +71,36 @@
       "name": "Internal Dev Tooling",
       "description": "Improving CI/CD pipeline speed, automated testing, and dev productivity.",
       "color": "#d97706",
+      "members": [
+        "usr-1",
+        "usr-4"
+      ],
       "createdAt": "2026-08-09"
     }
   ],
   "tasks": [
+    {
+      "id": "tsk-1786780992410",
+      "title": "Hey team, let us make sure the website redesign hero section is ready...",
+      "description": "Deliverable derived from Team Chat discussion:\n\"Hey team, let us make sure the website redesign hero section is ready by Friday.\"\n\nObjective: Execute and verify the exact work item specified in the team chat.",
+      "projectId": "proj-1",
+      "assigneeId": "usr-2",
+      "assigneeName": "Sarah Jenkins",
+      "priority": "Medium",
+      "status": "To Do",
+      "dueDate": "2026-08-15",
+      "tags": [],
+      "inMyDay": false,
+      "isImportant": false,
+      "isPersonal": false,
+      "recurring": "none",
+      "hasError": false,
+      "errorDetails": "",
+      "errorSeverity": "Low",
+      "createdAt": "2026-08-15",
+      "subtasks": [],
+      "comments": []
+    },
     {
       "id": "tsk-101",
       "title": "Fix authentication login bug",
@@ -73,7 +109,7 @@
       "assigneeId": "usr-2",
       "assigneeName": "Sarah Jenkins",
       "priority": "High",
-      "status": "In Progress",
+      "status": "Done",
       "dueDate": "2026-08-14",
       "tags": [
         "Bug",
@@ -160,6 +196,16 @@
   ],
   "personalGoals": [
     {
+      "id": "goal-1786777472569",
+      "userId": "usr-2",
+      "title": "journal",
+      "category": "Learning",
+      "completed": false,
+      "isImportant": false,
+      "dueDate": "2026-08-15",
+      "createdAt": "2026-08-15"
+    },
+    {
       "id": "goal-1",
       "userId": "usr-2",
       "title": "Read 20 pages of technical architecture book",
@@ -199,6 +245,16 @@
       "text": "Sarah Jenkins marked \"Fix authentication login bug\" as In Progress",
       "isSystemMessage": true,
       "timestamp": "09:45 AM"
+    },
+    {
+      "id": "msg-sys-1786780992410",
+      "projectId": "proj-1",
+      "userId": "system",
+      "userName": "System",
+      "userAvatar": "",
+      "text": "New task created: \"Hey team, let us make sure the website redesign hero section is ready...\" (Assigned to Sarah Jenkins)",
+      "isSystemMessage": true,
+      "timestamp": "13:33"
     }
   ],
   "settings": {

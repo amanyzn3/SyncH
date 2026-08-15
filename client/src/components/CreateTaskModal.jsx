@@ -6,21 +6,56 @@ import { X, Plus, Calendar, Tag, User, Layers, FolderPlus, Check } from 'lucide-
 export function parseChatToTask(rawChatText) {
   if (!rawChatText) return { title: '', description: '' };
 
-  let cleanText = rawChatText.trim();
+  const text = rawChatText.trim();
+  const lower = text.toLowerCase();
 
-  // Strip conversational chat prefixes for a concise, precise deliverable title
-  let title = cleanText
-    .replace(/^(hey\s+team|hi\s+team|team|please|can\s+someone|can\s+we|let\s+us|lets|working\s+on\s+the|working\s+on|need\s+to|we\s+need\s+to)\s+/i, '')
-    .replace(/[.!?]+$/, '');
+  // 1. Precise Title Extraction Logic
+  let title = text;
+
+  // Strip conversational chat greetings and filler phrases
+  title = title
+    .replace(/^(hey|hi|hello)\s+(team|everyone|guys|all)[,\s!]*/i, '')
+    .replace(/^(let\s+us|lets|please|can\s+someone|can\s+we|make\s+sure|make\s+sure\s+that|we\s+need\s+to|need\s+to|i\s+am|iam|working\s+on\s+the|working\s+on)\s+/i, '')
+    .replace(/\s+(right\s+now|asap|by\s+(friday|monday|tuesday|wednesday|thursday|saturday|sunday|today|tomorrow))[.!?]*$/i, '')
+    .replace(/[.!?]+$/, '')
+    .trim();
+
+  // Capitalize title
+  title = title.charAt(0).toUpperCase() + title.slice(1);
+
+  // If title still starts with conversational words, refine further
+  if (/^(is\s+ready|ready|done|complete)/i.test(title)) {
+    title = title.replace(/^(is\s+ready|ready|done|complete)\s*/i, '');
+    title = title.charAt(0).toUpperCase() + title.slice(1);
+  }
+
+  // Ensure title is concise (max 65 chars)
+  if (title.length > 65) {
+    const spaceIdx = title.lastIndexOf(' ', 60);
+    title = spaceIdx > 20 ? title.substring(0, spaceIdx) : title.substring(0, 60);
+  }
+
+  // Format into Title Case for a professional deliverable title
+  title = title
+    .split(' ')
+    .map(w => {
+      if (['a', 'an', 'the', 'and', 'or', 'in', 'on', 'at', 'to', 'for', 'by', 'of', 'with', 'is'].includes(w.toLowerCase())) {
+        return w.toLowerCase();
+      }
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    })
+    .join(' ');
 
   title = title.charAt(0).toUpperCase() + title.slice(1);
 
-  if (title.length > 75) {
-    const spaceIndex = title.lastIndexOf(' ', 70);
-    title = spaceIndex > 20 ? title.substring(0, spaceIndex) + '...' : title.substring(0, 70) + '...';
-  }
+  // 2. Precise Description Extraction
+  let actionVerb = 'Execute deliverable';
+  if (lower.includes('fix') || lower.includes('bug')) actionVerb = 'Resolve bug and fix issue';
+  else if (lower.includes('redesign') || lower.includes('design') || lower.includes('hero')) actionVerb = 'Design and implement updated component';
+  else if (lower.includes('update') || lower.includes('slides')) actionVerb = 'Revise and update deliverable assets';
+  else if (lower.includes('build') || lower.includes('create')) actionVerb = 'Build and deploy new functionality';
 
-  const description = `Deliverable derived from Team Chat discussion:\n"${cleanText}"\n\nObjective: Execute and verify the exact work item specified in the team chat.`;
+  const description = `Objective: ${title}\n\nTask Details:\n• ${actionVerb} based on team discussion.\n• Review implementation and verify quality standards prior to completion.`;
 
   return { title, description };
 }

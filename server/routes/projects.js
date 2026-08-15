@@ -3,10 +3,24 @@ import { loadData, saveData, getTodayString } from '../db.js';
 
 const router = express.Router();
 
-// GET all projects with task stats summary
+// GET all projects with task stats summary (Filtered by assignment for employees)
 router.get('/', (req, res) => {
+  const userHeaderId = req.headers['x-user-id'] || req.query.userId;
+  const userHeaderRole = req.headers['x-user-role'] || req.query.userRole;
+
   const db = loadData();
-  const projectsWithStats = db.projects.map((proj) => {
+  let availableProjects = db.projects;
+
+  // Filter projects for employees: only show projects they are assigned to
+  if (userHeaderRole === 'employee' && userHeaderId) {
+    availableProjects = db.projects.filter((proj) => {
+      const isMember = Array.isArray(proj.members) && proj.members.includes(userHeaderId);
+      const hasAssignedTask = db.tasks.some((t) => t.projectId === proj.id && t.assigneeId === userHeaderId);
+      return isMember || hasAssignedTask;
+    });
+  }
+
+  const projectsWithStats = availableProjects.map((proj) => {
     const projTasks = db.tasks.filter((t) => t.projectId === proj.id);
     const total = projTasks.length;
     const done = projTasks.filter((t) => t.status === 'Done').length;

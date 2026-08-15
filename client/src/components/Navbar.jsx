@@ -24,6 +24,7 @@ export default function Navbar({ onOpenCreateTask, onOpenAIChat, onOpenTeamChat,
   const { searchQuery, setSearchQuery, tasks } = useTasks();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationsVisited, setNotificationsVisited] = useState(false);
 
   const isManager = user?.role === 'manager';
 
@@ -33,6 +34,13 @@ export default function Navbar({ onOpenCreateTask, onOpenAIChat, onOpenTeamChat,
 
   // Employee notifications for assigned deliverables
   const assignedToMe = tasks.filter(t => t.assigneeId === user?.id && !t.isPersonal);
+
+  const handleToggleNotifications = () => {
+    if (!showNotifications) {
+      setNotificationsVisited(true);
+    }
+    setShowNotifications(!showNotifications);
+  };
 
   return (
     <header className="navbar-container" style={{
@@ -192,7 +200,7 @@ export default function Navbar({ onOpenCreateTask, onOpenAIChat, onOpenTeamChat,
         {/* Notifications Bell */}
         <div style={{ position: 'relative' }}>
           <button
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={handleToggleNotifications}
             style={{
               width: '36px',
               height: '36px',
@@ -206,7 +214,7 @@ export default function Navbar({ onOpenCreateTask, onOpenAIChat, onOpenTeamChat,
             }}
           >
             <Bell size={18} />
-            {(overdueCount > 0 || errorCount > 0 || assignedToMe.length > 0) && (
+            {!notificationsVisited && (overdueCount > 0 || errorCount > 0 || assignedToMe.length > 0) && (
               <span style={{
                 position: 'absolute',
                 top: '-2px',
@@ -219,7 +227,7 @@ export default function Navbar({ onOpenCreateTask, onOpenAIChat, onOpenTeamChat,
                 padding: '0.1rem 0.35rem',
                 lineHeight: 1
               }}>
-                {assignedToMe.length + errorCount}
+                {assignedToMe.length + errorCount || 1}
               </span>
             )}
           </button>

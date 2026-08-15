@@ -149,7 +149,14 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAIChat, onOpenT
 
             {/* 4. Project Board */}
             <button
-              onClick={() => { setActiveTab('board'); setFilterProject('ALL'); }}
+              onClick={() => {
+                setActiveTab('board');
+                if (isManager) {
+                  setFilterProject('ALL');
+                } else if (projects.length > 0) {
+                  setFilterProject(projects[0].id);
+                }
+              }}
               className="sidebar-nav-item"
               style={{
                 width: '100%',

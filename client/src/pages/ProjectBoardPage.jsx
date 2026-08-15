@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTasks } from '../context/TaskContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import TaskCard from '../components/TaskCard.jsx';
@@ -16,7 +16,13 @@ import {
   Send,
   PlusCircle,
   X,
-  Info
+  Info,
+  Paperclip,
+  Reply,
+  FileText,
+  Download,
+  Image as ImageIcon,
+  CornerDownRight
 } from 'lucide-react';
 
 export default function ProjectBoardPage({ onSelectTask, onOpenCreateTask, onOpenAIChat }) {
@@ -43,6 +49,9 @@ export default function ProjectBoardPage({ onSelectTask, onOpenCreateTask, onOpe
   // Default to false so Kanban board occupies full width, opening chat ONLY when icon is clicked
   const [showChatPanel, setShowChatPanel] = useState(false);
   const [chatInputText, setChatInputText] = useState('');
+  const [chatReplyingTo, setChatReplyingTo] = useState(null);
+  const [chatAttachment, setChatAttachment] = useState(null);
+  const inlineFileInputRef = useRef(null);
 
   const activeProjectId = filterProject !== 'ALL' ? filterProject : (projects[0]?.id || 'proj-1');
 
@@ -52,7 +61,8 @@ export default function ProjectBoardPage({ onSelectTask, onOpenCreateTask, onOpe
     }
   }, [activeProjectId, showChatPanel, fetchChatMessages]);
 
-  let filtered = tasks.filter(t => !t.isPersonal);
+  const assignedProjectIds = projects.map(p => p.id);
+  let filtered = tasks.filter(t => !t.isPersonal && (isManager || assignedProjectIds.includes(t.projectId)));
 
   if (filterProject !== 'ALL') {
     filtered = filtered.filter(t => t.projectId === filterProject);
@@ -93,11 +103,31 @@ export default function ProjectBoardPage({ onSelectTask, onOpenCreateTask, onOpe
     e.preventDefault();
   };
 
+  const handleInlineFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setChatAttachment({
+        name: file.name,
+        type: file.type,
+        size: Math.round(file.size / 1024) + ' KB',
+        url: event.target.result,
+        isImage: file.type.startsWith('image/')
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   const handleSendChat = async (e) => {
     e.preventDefault();
-    if (!chatInputText.trim()) return;
-    await sendChatMessage(activeProjectId, chatInputText);
+    if (!chatInputText.trim() && !chatAttachment) return;
+    await sendChatMessage(activeProjectId, chatInputText, chatReplyingTo, chatAttachment);
     setChatInputText('');
+    setChatReplyingTo(null);
+    setChatAttachment(null);
   };
 
   const handleTurnMessageIntoTask = (msgText) => {
@@ -153,70 +183,126 @@ export default function ProjectBoardPage({ onSelectTask, onOpenCreateTask, onOpe
         </div>
       </div>
 
-      {/* Filter Controls Toolbar */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        border: '1px solid var(--border-color)',
-        borderRadius: 'var(--radius-md)',
-        padding: '0.75rem 1rem',
-        marginBottom: '1.25rem',
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        gap: '1rem',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-muted)' }}>
-          <Filter size={15} /> Filter By:
-        </div>
+      {/* Filter Controls Toolbar - Rendered for Managers ONLY */}
+      {isManager && (
+        <div style={{
+          backgroundColor: 'var(--bg-surface)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-md)',
+          padding: '0.75rem 1rem',
+          marginBottom: '1.25rem',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '1rem',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-muted)' }}>
+            <Filter size={15} /> Filter By:
+          </div>
 
-        <select
-          value={filterProject}
-          onChange={(e) => setFilterProject(e.target.value)}
-          style={{ fontSize: '0.82rem', padding: '0.35rem 0.65rem' }}
-        >
-          <option value="ALL">All Projects</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
-
-        <select
-          value={filterAssignee}
-          onChange={(e) => setFilterAssignee(e.target.value)}
-          style={{ fontSize: '0.82rem', padding: '0.35rem 0.65rem' }}
-        >
-          <option value="ALL">All Assignees</option>
-          {allUsers.map((u) => (
-            <option key={u.id} value={u.id}>{u.name}</option>
-          ))}
-        </select>
-
-        <select
-          value={filterPriority}
-          onChange={(e) => setFilterPriority(e.target.value)}
-          style={{ fontSize: '0.82rem', padding: '0.35rem 0.65rem' }}
-        >
-          <option value="ALL">All Priorities</option>
-          <option value="High">High Priority</option>
-          <option value="Medium">Medium Priority</option>
-          <option value="Low">Low Priority</option>
-        </select>
-
-        {(filterProject !== 'ALL' || filterAssignee !== 'ALL' || filterPriority !== 'ALL' || searchQuery) && (
-          <button
-            onClick={() => {
-              setFilterProject('ALL');
-              setFilterAssignee('ALL');
-              setFilterPriority('ALL');
-              setSearchQuery('');
-            }}
-            style={{ fontSize: '0.78rem', color: 'var(--accent-red)', fontWeight: '600', marginLeft: 'auto' }}
+          <select
+            value={filterProject}
+            onChange={(e) => setFilterProject(e.target.value)}
+            style={{ fontSize: '0.82rem', padding: '0.35rem 0.65rem' }}
           >
-            Reset Filters
-          </button>
-        )}
-      </div>
+            <option value="ALL">All Projects</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+
+          <select
+            value={filterAssignee}
+            onChange={(e) => setFilterAssignee(e.target.value)}
+            style={{ fontSize: '0.82rem', padding: '0.35rem 0.65rem' }}
+          >
+            <option value="ALL">All Assignees</option>
+            {allUsers.map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            style={{ fontSize: '0.82rem', padding: '0.35rem 0.65rem' }}
+          >
+            <option value="ALL">All Priorities</option>
+            <option value="High">High Priority</option>
+            <option value="Medium">Medium Priority</option>
+            <option value="Low">Low Priority</option>
+          </select>
+
+          {(filterProject !== 'ALL' || filterAssignee !== 'ALL' || filterPriority !== 'ALL' || searchQuery) && (
+            <button
+              onClick={() => {
+                setFilterProject('ALL');
+                setFilterAssignee('ALL');
+                setFilterPriority('ALL');
+                setSearchQuery('');
+              }}
+              style={{ fontSize: '0.78rem', color: 'var(--accent-red)', fontWeight: '600', marginLeft: 'auto' }}
+            >
+              Reset Filters
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Employee Project Switcher Bar (rendered for employees with assigned projects) */}
+      {!isManager && projects.length > 0 && (
+        <div style={{
+          backgroundColor: 'var(--bg-surface)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-md)',
+          padding: '0.65rem 1rem',
+          marginBottom: '1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.85rem',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-muted)' }}>
+            <FolderKanban size={15} style={{ color: 'var(--primary)' }} /> Select Assigned Project:
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {projects.map((p) => {
+              const isSelected = filterProject === p.id || (filterProject === 'ALL' && projects[0]?.id === p.id);
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setFilterProject(p.id)}
+                  style={{
+                    padding: '0.4rem 0.85rem',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.82rem',
+                    fontWeight: isSelected ? '700' : '500',
+                    backgroundColor: isSelected ? 'var(--primary)' : 'var(--bg-surface-hover)',
+                    color: isSelected ? '#ffffff' : 'var(--text-primary)',
+                    border: '1px solid',
+                    borderColor: isSelected ? 'var(--primary)' : 'var(--border-color)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: isSelected ? '#ffffff' : (p.color || 'var(--primary)')
+                  }} />
+                  <span>{p.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Main Board Container */}
       <div style={{
@@ -390,18 +476,15 @@ export default function ProjectBoardPage({ onSelectTask, onOpenCreateTask, onOpe
               justifyContent: 'space-between',
               backgroundColor: 'var(--bg-surface-hover)'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700', fontSize: '0.9rem' }}>
-                <MessageSquare size={16} style={{ color: 'var(--primary)' }} />
-                <span>Team Chat</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span className="badge badge-status" style={{ fontSize: '0.7rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <MessageSquare size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {selectedProject ? selectedProject.name : 'Project Chat'}
                 </span>
-                <button onClick={() => setShowChatPanel(false)} style={{ color: 'var(--text-muted)', padding: '0.1rem' }}>
-                  <X size={16} />
-                </button>
               </div>
+              <button onClick={() => setShowChatPanel(false)} style={{ color: 'var(--text-muted)', padding: '0.1rem' }}>
+                <X size={16} />
+              </button>
             </div>
 
             {/* Stream */}
@@ -469,36 +552,151 @@ export default function ProjectBoardPage({ onSelectTask, onOpenCreateTask, onOpe
                         fontSize: '0.82rem',
                         lineHeight: 1.35
                       }}>
-                        {msg.text}
+                        {/* Quoted Reply Header */}
+                        {msg.replyTo && (
+                          <div style={{
+                            backgroundColor: isMe ? 'rgba(255, 255, 255, 0.15)' : 'var(--bg-surface)',
+                            borderLeft: '3px solid var(--primary)',
+                            padding: '0.3rem 0.5rem',
+                            borderRadius: 'var(--radius-sm)',
+                            marginBottom: '0.4rem',
+                            fontSize: '0.72rem'
+                          }}>
+                            <div style={{ fontWeight: '700', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                              <CornerDownRight size={11} /> Replying to {msg.replyTo.userName}
+                            </div>
+                            <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '180px', opacity: 0.85 }}>
+                              {msg.replyTo.text || (msg.replyTo.hasAttachment ? '[Attachment]' : '')}
+                            </div>
+                          </div>
+                        )}
+
+                        {msg.text && <div>{msg.text}</div>}
+
+                        {/* Attachment Render */}
+                        {msg.attachment && (
+                          <div style={{ marginTop: msg.text ? '0.4rem' : 0 }}>
+                            {msg.attachment.isImage ? (
+                              <img
+                                src={msg.attachment.url}
+                                alt={msg.attachment.name}
+                                style={{
+                                  maxWidth: '100%',
+                                  maxHeight: '160px',
+                                  borderRadius: 'var(--radius-md)',
+                                  objectFit: 'cover',
+                                  display: 'block'
+                                }}
+                              />
+                            ) : (
+                              <a
+                                href={msg.attachment.url}
+                                download={msg.attachment.name}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.4rem',
+                                  padding: '0.4rem 0.6rem',
+                                  backgroundColor: isMe ? 'rgba(255, 255, 255, 0.18)' : 'var(--bg-surface)',
+                                  borderRadius: 'var(--radius-md)',
+                                  color: isMe ? '#ffffff' : 'var(--primary)',
+                                  textDecoration: 'none',
+                                  fontSize: '0.78rem',
+                                  fontWeight: '600'
+                                }}
+                              >
+                                <FileText size={16} />
+                                <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {msg.attachment.name}
+                                </div>
+                                <Download size={13} />
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
 
-                      {/* Manager Only "Turn into Task" Button */}
-                      {isManager && (
+                      {/* Actions Bar */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
                         <button
-                          onClick={() => handleTurnMessageIntoTask(msg.text)}
+                          onClick={() => setChatReplyingTo({ id: msg.id, userName: msg.userName, text: msg.text, hasAttachment: Boolean(msg.attachment) })}
                           style={{
-                            marginTop: '0.25rem',
-                            fontSize: '0.7rem',
-                            fontWeight: '700',
-                            color: 'var(--primary)',
-                            backgroundColor: 'var(--bg-surface)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '0.15rem 0.4rem',
+                            fontSize: '0.68rem',
+                            fontWeight: '600',
+                            color: 'var(--text-muted)',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '0.3rem'
+                            gap: '0.2rem'
                           }}
-                          title="Manager Action: Turn message into task"
+                          title="Reply to message"
                         >
-                          <PlusCircle size={11} /> Turn into Task
+                          <Reply size={11} /> Reply
                         </button>
-                      )}
+
+                        {isManager && msg.text && (
+                          <button
+                            onClick={() => handleTurnMessageIntoTask(msg.text)}
+                            style={{
+                              fontSize: '0.68rem',
+                              fontWeight: '700',
+                              color: 'var(--primary)',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.2rem'
+                            }}
+                            title="Manager Action: Turn message into task"
+                          >
+                            <PlusCircle size={11} /> Turn into Task
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })
               )}
             </div>
+
+            {/* Reply & Attachment Context Bar */}
+            {(chatReplyingTo || chatAttachment) && (
+              <div style={{
+                padding: '0.4rem 0.75rem',
+                backgroundColor: 'var(--bg-surface-hover)',
+                borderTop: '1px solid var(--border-color)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.25rem'
+              }}>
+                {chatReplyingTo && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--primary)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <Reply size={13} />
+                      <span>Replying to <strong>{chatReplyingTo.userName}</strong>: "{chatReplyingTo.text || 'Attachment'}"</span>
+                    </div>
+                    <button onClick={() => setChatReplyingTo(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                      <X size={13} />
+                    </button>
+                  </div>
+                )}
+
+                {chatAttachment && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--accent-green)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {chatAttachment.isImage ? <ImageIcon size={13} /> : <FileText size={13} />}
+                      <span>Attached: <strong>{chatAttachment.name}</strong></span>
+                    </div>
+                    <button onClick={() => setChatAttachment(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                      <X size={13} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Input Bar */}
             <form
@@ -507,10 +705,39 @@ export default function ProjectBoardPage({ onSelectTask, onOpenCreateTask, onOpe
                 padding: '0.75rem',
                 borderTop: '1px solid var(--border-color)',
                 display: 'flex',
-                gap: '0.5rem',
+                alignItems: 'center',
+                gap: '0.4rem',
                 backgroundColor: 'var(--bg-surface)'
               }}
             >
+              <input
+                type="file"
+                ref={inlineFileInputRef}
+                onChange={handleInlineFileSelect}
+                style={{ display: 'none' }}
+              />
+
+              <button
+                type="button"
+                onClick={() => inlineFileInputRef.current?.click()}
+                style={{
+                  padding: '0.4rem',
+                  color: chatAttachment ? 'var(--accent-green)' : 'var(--text-muted)',
+                  backgroundColor: 'var(--bg-surface-hover)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '36px',
+                  width: '36px'
+                }}
+                title="Attach photo or document"
+              >
+                <Paperclip size={16} />
+              </button>
+
               <input
                 type="text"
                 placeholder="Type team message..."
